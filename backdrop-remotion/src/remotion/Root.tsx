@@ -1,14 +1,18 @@
+import { getAudioDurationInSeconds } from '@remotion/media-utils';
 import { Composition } from 'remotion';
 import { DEFAULT_CONFIG, makeChaos } from '../engine/SeedEngine';
-import { Backdrop, type BackdropRenderProps } from './Backdrop';
+import { Backdrop, resolveAudioSrc, type BackdropRenderProps } from './Backdrop';
 
-const defaults: BackdropRenderProps = { cfg: DEFAULT_CONFIG, width: 1920, height: 1080, fps: 30, durationInSeconds: 10, loop: false, loopFade: 1.5 };
+const defaults: BackdropRenderProps = {
+  cfg: DEFAULT_CONFIG, width: 1920, height: 1080, fps: 30, durationInSeconds: 10, loop: false, loopFade: 1.5, transparent: false, audio: null,
+};
 
 /**
- * Render any saved seed with:
- *   npm run render -- out/bg.mp4 --props=./my-seed.json
- * where my-seed.json is { "cfg": {...}, "width": 3840, "height": 2160, "fps": 60, "durationInSeconds": 20, "loop": true, "loopFade": 1.5 }
- * (the editor's "Download Remotion props" button writes exactly this file).
+ * Render any saved look with:
+ *   npm run render -- out/bg.mp4 --props=./my-look.json
+ * where my-look.json is { "cfg": {...}, "width": 3840, "height": 2160, "fps": 60, "durationInSeconds": 20,
+ *   "loop": true, "transparent": false, "audio": { "src": "track.mp3", "reactivity": 1, "matchLength": true } }
+ * (the editor's "Download props" button writes exactly this file; audio files go in public/).
  */
 export const RemotionRoot: React.FC = () => (
   <>
@@ -20,12 +24,16 @@ export const RemotionRoot: React.FC = () => (
       height={defaults.height}
       fps={defaults.fps}
       durationInFrames={defaults.fps * defaults.durationInSeconds}
-      calculateMetadata={({ props }) => ({
-        width: Math.round(props.width / 2) * 2,
-        height: Math.round(props.height / 2) * 2,
-        fps: props.fps,
-        durationInFrames: Math.max(1, Math.round(props.fps * props.durationInSeconds)),
-      })}
+      calculateMetadata={async ({ props }) => {
+        let seconds = props.durationInSeconds;
+        if (props.audio?.src && props.audio.matchLength) seconds = await getAudioDurationInSeconds(resolveAudioSrc(props.audio.src));
+        return {
+          width: Math.round(props.width / 2) * 2,
+          height: Math.round(props.height / 2) * 2,
+          fps: props.fps,
+          durationInFrames: Math.max(1, Math.round(props.fps * seconds)),
+        };
+      }}
     />
     {/* A ready-made chaos example to browse in Remotion Studio */}
     <Composition

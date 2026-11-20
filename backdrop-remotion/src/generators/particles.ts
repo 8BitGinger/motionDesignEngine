@@ -1,18 +1,30 @@
 import type { Generator } from '../engine/types';
-import { TAU, mod } from '../engine/rng';
+import { TAU, makeRng, mod } from '../engine/rng';
 import { rgba } from '../engine/ColorEngine';
 
-/** Drifting points joined by proximity lines. Positions are a pure function of t. */
+/**
+ * Drifting points joined by proximity lines. Positions are a pure function of t.
+ * When looping, points wander around a home position instead of drifting off (a straight drift can't repeat).
+ */
 export const particles: Generator = {
   name: 'Particle Flow',
+  kind: 'shape',
+  controls: [{ key: 'link', label: 'Link distance', min: 0.04, max: 0.35, step: 0.01 }],
   make(g) {
-    const { ctx, w, h, s, rng, p } = g, N = Math.round(110 * p.density), M = 40 * s;
-    const pts = Array.from({ length: N }, () => ({
-      x: rng() * (w + 2 * M), y: rng() * (h + 2 * M), vx: rng.range(-30, 30) * s, vy: rng.range(-30, 30) * s, r: rng.range(1.2, 3) * s, c: rng.int(0, 2),
-    }));
-    const D = Math.min(w, h) * 0.16, D2 = D * D, xs = new Float32Array(N), ys = new Float32Array(N);
+    const { ctx, w, h, s, rng, p } = g, N = Math.round(110 * p.density), M = 40 * s, loop = g.period > 0;
+    const r2 = makeRng(g.seed ^ 0x5151);
+    const pts = Array.from({ length: N }, () => {
+      const q = { x: rng() * (w + 2 * M), y: rng() * (h + 2 * M), vx: rng.range(-30, 30) * s, vy: rng.range(-30, 30) * s, r: rng.range(1.2, 3) * s, c: rng.int(0, 2) };
+      const ax = r2.range(40, 140) * s, ay = r2.range(40, 140) * s;
+      return { ...q, ax, ay, wx: g.lq(Math.max(0.05, Math.abs(q.vx) / ax)), wy: g.lq(Math.max(0.05, Math.abs(q.vy) / ay)), px: r2() * TAU, py: r2() * TAU };
+    });
+    const D = Math.min(w, h) * g.o('link', 0.16), D2 = D * D, xs = new Float32Array(N), ys = new Float32Array(N);
     return t => {
-      for (let i = 0; i < N; i++) { const q = pts[i]; xs[i] = mod(q.x + q.vx * t, w + 2 * M) - M; ys[i] = mod(q.y + q.vy * t, h + 2 * M) - M; }
+      for (let i = 0; i < N; i++) {
+        const q = pts[i];
+        if (loop) { xs[i] = mod(q.x + Math.sin(t * q.wx + q.px) * q.ax, w + 2 * M) - M; ys[i] = mod(q.y + Math.sin(t * q.wy + q.py) * q.ay, h + 2 * M) - M; }
+        else { xs[i] = mod(q.x + q.vx * t, w + 2 * M) - M; ys[i] = mod(q.y + q.vy * t, h + 2 * M) - M; }
+      }
       // bucket links by opacity so we stroke 5 paths instead of hundreds
       const buckets: number[][] = [[], [], [], [], []];
       for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {

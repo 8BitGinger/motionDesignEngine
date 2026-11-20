@@ -5,24 +5,29 @@ import { rgba } from '../engine/ColorEngine';
 /** Tech grid: data packets racing along lines, blinking nodes and a slow scan band. */
 export const digital: Generator = {
   name: 'Digital Grid',
+  kind: 'shape',
+  controls: [{ key: 'cell', label: 'Grid size', min: 24, max: 220, step: 1 }],
   make(g) {
     const { ctx, w, h, s, rng, p } = g;
-    const cell = (72 * s) / Math.sqrt(p.density), cols = Math.ceil(w / cell) + 1, rows = Math.ceil(h / cell) + 1;
+    const cell = g.o('cell', 72 / Math.sqrt(p.density)) * s, cols = Math.ceil(w / cell) + 1, rows = Math.ceil(h / cell) + 1;
     const ox = (w - (cols - 1) * cell) / 2, oy = (h - (rows - 1) * cell) / 2;
     const grid = new Path2D();
     for (let c = 0; c < cols; c++) { grid.moveTo(ox + c * cell, 0); grid.lineTo(ox + c * cell, h); }
     for (let r = 0; r < rows; r++) { grid.moveTo(0, oy + r * cell); grid.lineTo(w, oy + r * cell); }
-    const nodes = Array.from({ length: 50 }, () => ({ c: rng.int(0, cols - 1), r: rng.int(0, rows - 1), sp: rng.range(0.3, 1.2), ph: rng() * TAU, col: g.c(rng.int(0, 2)) }));
+    const nodes = Array.from({ length: 50 }, () => ({ c: rng.int(0, cols - 1), r: rng.int(0, rows - 1), sp: g.lq(rng.range(0.3, 1.2)), ph: rng() * TAU, col: g.c(rng.int(0, 2)) }));
     const packets = Array.from({ length: Math.round(26 * p.density) + 6 }, (_, i) => {
       const horiz = rng() < 0.5;
-      return {
+      const q = {
         horiz, line: horiz ? rng.int(0, rows - 1) : rng.int(0, cols - 1), sp: rng.range(1.5, 5) * cell, dir: rng() < 0.5 ? -1 : 1,
         len: rng.range(1.5, 4) * cell, off: rng() * 5000 * s, col: g.c(i % 3),
       };
+      const span = (horiz ? w : h) + q.len * 2;
+      return { ...q, span, v: g.lq(q.sp * q.dir, span) };
     });
+    const scan = g.lq(h * 0.12, h * 1.4);
     return t => {
       ctx.save(); ctx.lineWidth = s; ctx.strokeStyle = rgba(g.c(0), 0.15); ctx.stroke(grid);
-      const sy = mod(t * h * 0.12, h * 1.4) - h * 0.2, band = ctx.createLinearGradient(0, sy - h * 0.12, 0, sy + h * 0.12);
+      const sy = mod(t * scan, h * 1.4) - h * 0.2, band = ctx.createLinearGradient(0, sy - h * 0.12, 0, sy + h * 0.12);
       band.addColorStop(0, rgba(g.c(1), 0)); band.addColorStop(0.5, rgba(g.c(1), 0.07)); band.addColorStop(1, rgba(g.c(1), 0));
       ctx.fillStyle = band; ctx.fillRect(0, sy - h * 0.12, w, h * 0.24);
       for (const n of nodes) {
@@ -34,7 +39,7 @@ export const digital: Generator = {
       }
       ctx.lineWidth = 2 * s; ctx.lineCap = 'round';
       for (const q of packets) {
-        const span = (q.horiz ? w : h) + q.len * 2, pos = mod(q.off + q.sp * q.dir * t, span) - q.len, tail = pos - q.dir * q.len;
+        const pos = mod(q.off + q.v * t, q.span) - q.len, tail = pos - q.dir * q.len;
         const fixed = q.horiz ? oy + q.line * cell : ox + q.line * cell;
         const [x1, y1, x2, y2] = q.horiz ? [tail, fixed, pos, fixed] : [fixed, tail, fixed, pos];
         const gr = ctx.createLinearGradient(x1, y1, x2, y2);

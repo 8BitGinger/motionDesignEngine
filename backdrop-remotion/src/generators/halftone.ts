@@ -5,9 +5,14 @@ import { rgba } from '../engine/ColorEngine';
 /** Rotated halftone dot screen whose dot sizes follow a drifting noise field. */
 export const halftone: Generator = {
   name: 'Halftone',
+  kind: 'shape',
+  controls: [
+    { key: 'cell', label: 'Dot spacing', min: 8, max: 90, step: 1 },
+    { key: 'angle', label: 'Screen angle (°)', min: 0, max: 90, step: 1 },
+  ],
   make(g) {
     const { ctx, w, h, s, rng, noise, p } = g;
-    const cell = (30 / Math.sqrt(p.density)) * s, ang = rng.range(0.15, 0.6), ca = Math.cos(ang), sa = Math.sin(ang);
+    const cell = g.o('cell', 30 / Math.sqrt(p.density)) * s, ang = (g.o('angle', (rng.range(0.15, 0.6) * 180) / Math.PI) * Math.PI) / 180, ca = Math.cos(ang), sa = Math.sin(ang);
     const D = Math.hypot(w, h), n = Math.ceil(D / cell) + 2, sc = 1 / (520 * s), sq = rng() < 0.3;
     const paths: Path2D[] = [];
     return t => {
@@ -18,7 +23,10 @@ export const halftone: Generator = {
         const gx = i * cell, gy = j * cell;
         const x = w / 2 + gx * ca - gy * sa, y = h / 2 + gx * sa + gy * ca;
         if (x < -cell || y < -cell || x > w + cell || y > h + cell) continue;
-        const v = noise((x + dx) * sc, y * sc, z) * 0.75 + noise((x - dx) * sc * 2.6, y * sc * 2.6, z * 1.3) * 0.35;
+        // Looping: no sideways drift (it can't repeat); the field morphs on a noise circle instead.
+        const v = g.period
+          ? g.tn(x * sc, y * sc, t, 0.07) * 0.75 + g.tn(x * sc * 2.6, y * sc * 2.6, t, 0.091) * 0.35
+          : noise((x + dx) * sc, y * sc, z) * 0.75 + noise((x - dx) * sc * 2.6, y * sc * 2.6, z * 1.3) * 0.35;
         const r = Math.max(0, (v + 0.55) * 0.55) * cell * 0.62;
         if (r < 0.5 * s) continue;
         const k = Math.min(4, Math.max(0, Math.floor((v + 0.6) * 3.5)));

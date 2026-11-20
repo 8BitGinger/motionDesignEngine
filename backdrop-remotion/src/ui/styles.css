@@ -49,3 +49,17 @@ main { display: flex; min-width: 0; min-height: 0 }
   main { order: -1; height: 55vh }
   aside { border-right: 0 }
 }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px }
+.ctl { display: grid; grid-template-columns: 1fr 26px; gap: 6px; align-items: center }
+button.mini { padding: 2px 0; font-size: 12px; line-height: 18px }
+button.link { background: none; border: 0; color: var(--mute); padding: 6px 0 0; text-decoration: underline }
+.tabs { display: flex; gap: 6px; margin-bottom: 10px }
+.tabs button { flex: 1; padding: 6px }
+.tabs button.on { border-color: var(--accent); color: #fff }
+.lib { position: relative }
+.lib .type { width: 100% }
+.lib .x { position: absolute; top: 3px; right: 3px; padding: 0 6px; font-size: 13px; line-height: 18px; background: rgba(0,0,0,.6) }
+details.layer { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; margin: 6px 0 }
+details.layer summary { cursor: pointer; font-size: 12px; color: var(--text) }
+code { font: 11px ui-monospace, Consolas, monospace; background: var(--panel2); padding: 1px 4px; border-radius: 3px }
+input[type=file] { width: 100%; color: var(--mute); font: inherit }

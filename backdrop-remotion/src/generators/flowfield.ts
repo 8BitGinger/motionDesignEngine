@@ -10,10 +10,18 @@ import { rgba } from '../engine/ColorEngine';
  */
 export const flowfield: Generator = {
   name: 'Flow Field',
+  kind: 'shape',
+  // Stateful (trails accumulate), so it can't repeat exactly: loops use the crossfade fallback.
+  loops: false,
+  controls: [
+    { key: 'turbulence', label: 'Turbulence', min: 0.3, max: 6, step: 0.1 },
+    { key: 'trail', label: 'Trail length', min: 0.1, max: 3, step: 0.05 },
+  ],
   make(g) {
     const { w, h, s, p, noise } = g;
     const { buf, bctx } = g.buffer();
     const N = Math.min(1500, Math.round(600 * p.density)), DT = 1 / 60, sc = 0.0022 / s, V = 70 * s, WARMUP = 3;
+    const turb = TAU * g.o('turbulence', 2.2), fadeA = (0.045 / g.o('trail', 1)).toFixed(4);
     type P = { x: number; y: number; life: number; c: number };
     let rng = makeRng(g.seed ^ 0xabc), pts: P[] = [], simT = 0;
     const spawn = (q: P) => { q.x = rng() * w; q.y = rng() * h; q.life = rng.range(2, 8); return q; };
@@ -24,13 +32,13 @@ export const flowfield: Generator = {
       simT = -WARMUP;
     };
     const step = () => {
-      bctx.globalCompositeOperation = 'destination-out'; bctx.fillStyle = 'rgba(0,0,0,.045)'; bctx.fillRect(0, 0, w, h);
+      bctx.globalCompositeOperation = 'destination-out'; bctx.fillStyle = `rgba(0,0,0,${fadeA})`; bctx.fillRect(0, 0, w, h);
       bctx.globalCompositeOperation = 'source-over'; bctx.lineWidth = 1.6 * s; bctx.lineCap = 'round';
       for (let c = 0; c < 4; c++) {
         bctx.beginPath();
         for (const q of pts) {
           if (q.c !== c) continue;
-          const a = noise(q.x * sc, q.y * sc, simT * 0.08) * TAU * 2.2;
+          const a = noise(q.x * sc, q.y * sc, simT * 0.08) * turb;
           const nx = q.x + Math.cos(a) * V * DT, ny = q.y + Math.sin(a) * V * DT;
           bctx.moveTo(q.x, q.y); bctx.lineTo(nx, ny);
           q.x = nx; q.y = ny; q.life -= DT;

@@ -4,15 +4,17 @@ import { TAU } from '../engine/rng';
 /** Mesh gradient: inverse-distance blend of moving colour points on a tiny canvas, upscaled smoothly. */
 export const mesh: Generator = {
   name: 'Liquid Mesh',
+  kind: 'field',
+  controls: [{ key: 'points', label: 'Colour points', min: 2, max: 16, step: 1 }],
   make(g) {
     const { ctx, w, h, rng, p, pal } = g;
     const lw = 96, lh = Math.max(8, Math.round((96 * h) / w));
     const off = document.createElement('canvas'); off.width = lw; off.height = lh;
     const octx = off.getContext('2d')!, img = octx.createImageData(lw, lh), asp = w / h;
-    const K = Math.round(4 + 3 * p.density);
+    const K = Math.round(g.o('points', 4 + 3 * p.density));
     const cols = [...Array.from({ length: K }, (_, i) => pal.rgb[i % pal.rgb.length]), pal.bgRgb[0], pal.bgRgb[1]];
     const pts = cols.map(rgb => ({
-      x: rng(), y: rng(), ax: rng.range(0.15, 0.4), ay: rng.range(0.15, 0.4), fx: rng.range(0.08, 0.2), fy: rng.range(0.08, 0.2), ph: rng() * TAU, rgb,
+      x: rng(), y: rng(), ax: rng.range(0.15, 0.4), ay: rng.range(0.15, 0.4), fx: g.lq(rng.range(0.08, 0.2)), fy: g.lq(rng.range(0.08, 0.2)), ph: rng() * TAU, rgb,
     }));
     const P = pts.length, px = new Float32Array(P), py = new Float32Array(P);
     return t => {

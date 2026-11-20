@@ -1,0 +1,15 @@
+{
+  "cfg": {
+    "version": 1,
+    "type": "tunnel",
+    "seed": 21,
+    "palette": { "mode": "theme", "theme": "neon" },
+    "params": { "speed": 1, "density": 1, "glow": true, "grain": 0.1, "vignette": 0.4 },
+    "opts": { "sides": 6 }
+  },
+  "width": 1280,
+  "height": 720,
+  "fps": 30,
+  "durationInSeconds": 10,
+  "audio": { "src": "test-beat.wav", "reactivity": 1.2, "matchLength": true }
+}

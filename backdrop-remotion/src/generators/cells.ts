@@ -4,14 +4,19 @@ import { TAU } from '../engine/rng';
 /** Organic Voronoi cells with lit edges. Distance field computed at a fixed small size, upscaled smoothly. */
 export const cells: Generator = {
   name: 'Organic Cells',
+  kind: 'field',
+  controls: [
+    { key: 'cells', label: 'Cells', min: 4, max: 80, step: 1 },
+    { key: 'edge', label: 'Edge width', min: 0.2, max: 4, step: 0.05 },
+  ],
   make(g) {
     const { ctx, w, h, rng, p, pal } = g;
     const lw = 400, lh = Math.max(8, Math.round((400 * h) / w)), asp = w / h;
     const off = document.createElement('canvas'); off.width = lw; off.height = lh;
     const octx = off.getContext('2d')!, img = octx.createImageData(lw, lh), d = img.data;
-    const N = Math.round(14 + 14 * p.density);
+    const N = Math.round(g.o('cells', 14 + 14 * p.density)), edgeK = 60 / g.o('edge', 1);
     const pts = Array.from({ length: N }, (_, i) => ({
-      x: rng() * asp, y: rng(), ax: rng.range(0.03, 0.12), ay: rng.range(0.03, 0.12), fx: rng.range(0.1, 0.3), fy: rng.range(0.1, 0.3), ph: rng() * TAU,
+      x: rng() * asp, y: rng(), ax: rng.range(0.03, 0.12), ay: rng.range(0.03, 0.12), fx: g.lq(rng.range(0.1, 0.3)), fy: g.lq(rng.range(0.1, 0.3)), ph: rng() * TAU,
       rgb: pal.rgb[i % pal.rgb.length], shade: rng.range(0.18, 0.5),
     }));
     const px = new Float32Array(N), py = new Float32Array(N), bg = pal.bgRgb[0];
@@ -28,7 +33,7 @@ export const cells: Generator = {
             if (dd < d1) { d2 = d1; d1 = dd; k1 = i; } else if (dd < d2) d2 = dd;
           }
           const a = Math.sqrt(d1), b = Math.sqrt(d2), gap = b - a;
-          const e = Math.max(0, 1 - gap * 60) * glow, core = Math.max(0, 1 - a * 5) * 0.5;
+          const e = Math.max(0, 1 - gap * edgeK) * glow, core = Math.max(0, 1 - a * 5) * 0.5;
           const q = pts[k1], m = q.shade + core, o = (y * lw + x) * 4;
           d[o] = Math.min(255, bg[0] + (q.rgb[0] - bg[0]) * m + edge[0] * e);
           d[o + 1] = Math.min(255, bg[1] + (q.rgb[1] - bg[1]) * m + edge[1] * e);

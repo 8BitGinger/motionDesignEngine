@@ -5,14 +5,19 @@ import { mixHex, rgba } from '../engine/ColorEngine';
 /** Stacked filled sine layers with highlighted crests. */
 export const waves: Generator = {
   name: 'Wave Bands',
+  kind: 'shape',
+  controls: [
+    { key: 'layers', label: 'Layers', min: 2, max: 12, step: 1 },
+    { key: 'amp', label: 'Amplitude', min: 0.2, max: 3, step: 0.05 },
+  ],
   make(g) {
-    const { ctx, w, h, s, rng, p, pal } = g, L = Math.round(4 + 3 * p.density), steps = 90;
+    const { ctx, w, h, s, rng, p, pal } = g, L = Math.round(g.o('layers', 4 + 3 * p.density)), amp = g.o('amp', 1), steps = 90;
     const layers = Array.from({ length: L }, (_, i) => {
-      const base = h * (0.3 + (0.62 * i) / L), a1 = h * rng.range(0.03, 0.08), col = g.c(i);
+      const base = h * (0.3 + (0.62 * i) / L), a1 = h * rng.range(0.03, 0.08) * amp, col = g.c(i);
       const gr = ctx.createLinearGradient(0, base - a1 * 2, 0, h);
       gr.addColorStop(0, rgba(col, 0.8)); gr.addColorStop(1, rgba(mixHex(col, pal.bg[0], 0.75), 0.95));
       return {
-        base, a1, f1: rng.range(1, 2.5), v1: rng.range(0.2, 0.5), a2: h * rng.range(0.01, 0.035), f2: rng.range(3, 6), v2: rng.range(-0.6, 0.6),
+        base, a1, f1: rng.range(1, 2.5), v1: g.lq(rng.range(0.2, 0.5)), a2: h * rng.range(0.01, 0.035) * amp, f2: rng.range(3, 6), v2: g.lq(rng.range(-0.6, 0.6)),
         ph: rng() * TAU, gr, edge: rgba(mixHex(col, '#ffffff', 0.4), 0.6),
       };
     });

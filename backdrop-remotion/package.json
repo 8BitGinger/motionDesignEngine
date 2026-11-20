@@ -9,11 +9,16 @@
     "typecheck": "tsc --noEmit",
     "studio": "remotion studio src/remotion/index.ts",
     "render": "remotion render src/remotion/index.ts Backdrop",
-    "still": "remotion still src/remotion/index.ts Backdrop"
+    "still": "remotion still src/remotion/index.ts Backdrop",
+    "batch": "node scripts/render-batch.mjs",
+    "test": "node scripts/snapshot.mjs"
   },
   "dependencies": {
+    "@remotion/bundler": "4.0.545",
     "@remotion/cli": "4.0.545",
+    "@remotion/media-utils": "4.0.545",
     "@remotion/player": "4.0.545",
+    "@remotion/renderer": "4.0.545",
     "jszip": "3.10.2",
     "mp4-muxer": "5.2.2",
     "react": "19.3.1",

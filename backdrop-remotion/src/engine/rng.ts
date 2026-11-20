@@ -45,3 +45,25 @@ export function makeNoise(seed: number): Noise {
       lerp(lerp(H(X, Y, Z + 1), H(X + 1, Y, Z + 1), u), lerp(H(X, Y + 1, Z + 1), H(X + 1, Y + 1, Z + 1), u), v), w);
   };
 }
+
+/**
+ * Seeded 4D value noise, roughly in [-1, 1]. Used for seamless loops: walking a circle in the (z, w)
+ * plane gives a noise signal that returns exactly to its start after one lap.
+ */
+export function makeNoise4(seed: number) {
+  const r = mulberry32((seed ^ 0x85ebca6b) >>> 0);
+  const perm = Array.from({ length: 256 }, (_, i) => i);
+  for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
+  const p = new Uint8Array(512); for (let i = 0; i < 512; i++) p[i] = perm[i & 255];
+  const vals = new Float32Array(256); for (let i = 0; i < 256; i++) vals[i] = r() * 2 - 1;
+  const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
+  const H = (x: number, y: number, z: number, w: number) => vals[p[p[p[p[x & 255] + (y & 255)] + (z & 255)] + (w & 255)]];
+  return (x: number, y: number, z: number, w: number) => {
+    const X = Math.floor(x), Y = Math.floor(y), Z = Math.floor(z), W = Math.floor(w);
+    const u = fade(x - X), v = fade(y - Y), s = fade(z - Z), q = fade(w - W);
+    const cube = (W0: number) => lerp(
+      lerp(lerp(H(X, Y, Z, W0), H(X + 1, Y, Z, W0), u), lerp(H(X, Y + 1, Z, W0), H(X + 1, Y + 1, Z, W0), u), v),
+      lerp(lerp(H(X, Y, Z + 1, W0), H(X + 1, Y, Z + 1, W0), u), lerp(H(X, Y + 1, Z + 1, W0), H(X + 1, Y + 1, Z + 1, W0), u), v), s);
+    return lerp(cube(W), cube(W + 1), q);
+  };
+}

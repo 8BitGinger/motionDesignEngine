@@ -4,18 +4,22 @@ import { rgba } from '../engine/ColorEngine';
 /** Topographic contour lines of a slowly morphing height field (marching squares). */
 export const topo: Generator = {
   name: 'Topographic',
+  kind: 'shape',
+  controls: [
+    { key: 'levels', label: 'Contour levels', min: 4, max: 40, step: 1 },
+    { key: 'scale', label: 'Terrain scale', min: 0.3, max: 3, step: 0.05 },
+  ],
   make(g) {
-    const { ctx, w, h, s, noise, p, rng } = g;
+    const { ctx, w, h, s, p, rng } = g;
     const cell = 16 * s, cols = Math.ceil(w / cell) + 1, rows = Math.ceil(h / cell) + 1;
-    const levels = Math.round(9 + 7 * p.density), sc = 1 / (420 * s), ox = rng() * 100, oy = rng() * 100;
+    const levels = Math.round(g.o('levels', 9 + 7 * p.density)), sc = 1 / (420 * s * g.o('scale', 1)), ox = rng() * 100, oy = rng() * 100;
     const f = new Float32Array(cols * rows);
     const paths: Path2D[] = [];
     return t => {
-      const z = t * 0.06;
       for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
         const x = i * cell * sc + ox, y = j * cell * sc + oy;
         // two octaves, remapped to ~[0,1)
-        f[j * cols + i] = 0.5 + 0.38 * noise(x, y, z) + 0.2 * noise(x * 2.3 + 7, y * 2.3, z * 1.7);
+        f[j * cols + i] = 0.5 + 0.38 * g.tn(x, y, t, 0.06) + 0.2 * g.tn(x * 2.3 + 7, y * 2.3, t, 0.102);
       }
       paths.length = 0;
       for (let L = 0; L < levels; L++) paths.push(new Path2D());

@@ -2,10 +2,9 @@
  * In-browser export (no CLI needed): renders frame-by-frame offline and encodes with WebCodecs.
  * For the Remotion pipeline (ProRes, GIF, H.265, server/Lambda rendering) see src/remotion.
  */
-import JSZip from 'jszip';
-import * as Mp4 from 'mp4-muxer';
-import * as Webm from 'webm-muxer';
-import { createRenderer } from './MotionEngine';
+import { getAudioData } from '@remotion/media-utils';
+import { analyzeAudio } from './AudioEngine';
+import { createRenderer, type AudioFrame } from './MotionEngine';
 import { clamp } from './rng';
 import type { BackdropConfig } from './types';
 
@@ -18,8 +17,13 @@ export interface ExportJob {
   fps: number;
   durationInSeconds: number;
   format: ExportFormat;
-  /** Seamless loop crossfade (seconds); 0 or undefined = no loop. */
+  /** Seamless loop; `loopFade` is the crossfade for patterns that can't loop natively. */
+  loop?: boolean;
   loopFade?: number;
+  /** Transparent background (PNG formats only; use the Remotion CLI for ProRes 4444 / VP9 alpha video). */
+  transparent?: boolean;
+  /** Audio-reactive motion. Quick export drives the motion from the track but writes no soundtrack. */
+  audio?: { src: string; reactivity?: number } | null;
   /** Time of the still frame (format 'png'). */
   stillTime?: number;
   signal?: AbortSignal;
@@ -50,21 +54,31 @@ export const baseName = (cfg: BackdropConfig, w: number, h: number) => `backdrop
 export async function runExport(job: ExportJob): Promise<ExportResult> {
   const { cfg, width: w, height: h, fps, format, signal, onProgress = () => {} } = job;
   const total = Math.round(fps * job.durationInSeconds), name = baseName(cfg, w, h);
+  const transparent = !!job.transparent;
+  if (transparent && (format === 'mp4' || format === 'webm')) throw new Error('MP4/WebM quick export has no alpha. Use PNG, or the Remotion CLI with ProRes 4444 / VP9.');
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-  const r = createRenderer(cv, cfg, { exact: true, loop: job.loopFade ? { length: total / fps, fade: job.loopFade } : null });
+  const reactivity = job.audio?.src ? job.audio.reactivity ?? 1 : 0;
+  let features: AudioFrame[] | null = null;
+  if (reactivity > 0) {
+    onProgress(0, 'Analysing audio…');
+    features = analyzeAudio(await getAudioData(job.audio!.src), fps, total);
+  }
+  const r = createRenderer(cv, cfg, { exact: true, transparent, reactivity, loop: job.loop ? { length: total / fps, fade: job.loopFade ?? 1.5 } : null });
+  const draw = (i: number) => r.render(i / fps, features?.[i] ?? null);
   const checkAbort = () => { if (signal?.aborted) throw new Error('Cancelled.'); };
 
   if (format === 'png') {
     const t = job.stillTime ?? 0;
-    r.render(t);
+    draw(Math.round(t * fps));
     return { blob: await toPng(cv), filename: `${name}_t${t.toFixed(2)}.png` };
   }
 
   if (format === 'png-seq') {
+    const { default: JSZip } = await import('jszip');
     const zip = new JSZip(), pad = Math.max(5, String(total).length);
     for (let i = 0; i < total; i++) {
       checkAbort();
-      r.render(i / fps);
+      draw(i);
       zip.file(`${name}_${String(i).padStart(pad, '0')}.png`, await toPng(cv));
       onProgress(((i + 1) / total) * 0.9, `Frame ${i + 1}/${total}`);
     }
@@ -80,11 +94,13 @@ export async function runExport(job: ExportJob): Promise<ExportResult> {
   let finish: () => ArrayBuffer;
 
   if (format === 'mp4') {
+    const Mp4 = await import('mp4-muxer');
     config = await pickCodec(['avc1.640034', 'avc1.640033', 'avc1.640032', 'avc1.640028', 'avc1.4d0034', 'avc1.42003e'], w, h, fps, bitrate);
     if (!config) throw new Error(`No H.264 encoder supports ${w}×${h}@${fps}. Try WebM or the Remotion CLI.`);
     const muxer = new Mp4.Muxer({ target: new Mp4.ArrayBufferTarget(), video: { codec: 'avc', width: w, height: h, frameRate: fps }, fastStart: 'in-memory' });
     addChunk = (c, m) => muxer.addVideoChunk(c, m); finish = () => { muxer.finalize(); return muxer.target.buffer; };
   } else {
+    const Webm = await import('webm-muxer');
     config = await pickCodec(['vp09.00.51.08', 'vp09.00.41.08', 'vp09.00.31.08', 'vp8'], w, h, fps, bitrate);
     if (!config) throw new Error(`No VP9 encoder supports ${w}×${h}@${fps}.`);
     const muxer = new Webm.Muxer({ target: new Webm.ArrayBufferTarget(), video: { codec: config.codec === 'vp8' ? 'V_VP8' : 'V_VP9', width: w, height: h, frameRate: fps } });
@@ -100,7 +116,7 @@ export async function runExport(job: ExportJob): Promise<ExportResult> {
     for (let i = 0; i < total; i++) {
       checkAbort();
       if (encErr) throw encErr;
-      r.render(i / fps);
+      draw(i);
       const frame = new VideoFrame(cv, { timestamp: Math.round((i * 1e6) / fps), duration: Math.round(1e6 / fps) });
       enc.encode(frame, { keyFrame: i % (fps * 2) === 0 });
       frame.close();

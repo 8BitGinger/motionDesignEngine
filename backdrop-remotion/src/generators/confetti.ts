@@ -4,14 +4,20 @@ import { TAU, mod } from '../engine/rng';
 /** Falling confetti that sways and flips (3D flip faked with a cosine scale). */
 export const confetti: Generator = {
   name: 'Confetti',
+  kind: 'shape',
+  controls: [{ key: 'size', label: 'Piece size', min: 0.3, max: 3, step: 0.05 }],
   make(g) {
     const { ctx, w, h, s, rng, p } = g;
-    const N = Math.round(220 * p.density), M = 40 * s;
-    const bits = Array.from({ length: N }, () => ({
-      x: rng(), y: rng(), v: rng.range(60, 160) * s, sw: rng.range(10, 50) * s, sf: rng.range(0.4, 1.4), ph: rng() * TAU,
-      rot: rng() * TAU, vr: rng.range(-2, 2), flip: rng.range(1.5, 5), fw: rng.range(14, 30) * s, fh: rng.range(7, 14) * s,
-      c: rng.int(0, 4), round: rng() < 0.25,
-    }));
+    const N = Math.round(220 * p.density), M = 40 * s, size = g.o('size', 1);
+    const bits = Array.from({ length: N }, () => {
+      const b = {
+        x: rng(), y: rng(), v: rng.range(60, 160) * s, sw: rng.range(10, 50) * s, sf: rng.range(0.4, 1.4), ph: rng() * TAU,
+        rot: rng() * TAU, vr: rng.range(-2, 2), flip: rng.range(1.5, 5), fw: rng.range(14, 30) * s * size, fh: rng.range(7, 14) * s * size,
+        c: rng.int(0, 4), round: rng() < 0.25,
+      };
+      // Looping: whole falls per period, whole sway/flip/spin cycles.
+      return { ...b, v: g.lq(b.v, h + 2 * M), sf: g.lq(b.sf), flip: g.lq(b.flip), vr: g.lq(b.vr) };
+    });
     return t => {
       ctx.save();
       for (const b of bits) {
