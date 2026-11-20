@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-labelledby="t d">
+  <title id="t">Backdrop Studio</title>
+  <desc id="d">A 16:9 frame holding layered motion waves under a rising orb, with the wordmark Backdrop Studio.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b0c14"/>
+      <stop offset="0.55" stop-color="#100d22"/>
+      <stop offset="1" stop-color="#07080d"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="800" cy="360" r="520" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7c5cff" stop-opacity="0.42"/>
+      <stop offset="0.45" stop-color="#7c5cff" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#7c5cff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7c5cff"/>
+      <stop offset="0.5" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#ff4fd8"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1446"/>
+      <stop offset="1" stop-color="#0c0a1c"/>
+    </linearGradient>
+    <radialGradient id="orb" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff4fb"/>
+      <stop offset="0.35" stop-color="#ff9be9"/>
+      <stop offset="1" stop-color="#ff4fd8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="w1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7c5cff"/>
+      <stop offset="1" stop-color="#2a1d6e"/>
+    </linearGradient>
+    <linearGradient id="w2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#0b4a63"/>
+    </linearGradient>
+    <linearGradient id="w3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff4fd8"/>
+      <stop offset="1" stop-color="#5a1752"/>
+    </linearGradient>
+    <clipPath id="frame">
+      <rect x="610" y="236" width="380" height="214" rx="30"/>
+    </clipPath>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="13" cy="13" r="2.2" fill="#ffffff"/>
+    </pattern>
+    <radialGradient id="dotFade" cx="800" cy="400" r="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0.35" stop-color="#000"/>
+      <stop offset="1" stop-color="#fff"/>
+    </radialGradient>
+    <mask id="dotMask">
+      <rect width="1600" height="900" fill="url(#dotFade)"/>
+    </mask>
+  </defs>
+
+  <!-- canvas -->
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#dots)" mask="url(#dotMask)" opacity="0.07"/>
+  <rect width="1600" height="900" fill="url(#halo)"/>
+
+  <!-- orbit rings -->
+  <g fill="none" stroke="url(#brand)" stroke-linecap="round">
+    <ellipse cx="800" cy="343" rx="300" ry="112" transform="rotate(-10 800 343)" stroke-width="2" opacity="0.35"/>
+    <ellipse cx="800" cy="343" rx="350" ry="146" transform="rotate(-10 800 343)" stroke-width="1.5" stroke-dasharray="3 14" opacity="0.4"/>
+  </g>
+  <circle cx="1138" cy="292" r="6" fill="#22d3ee"/>
+  <circle cx="470" cy="402" r="4.5" fill="#ff4fd8"/>
+
+  <!-- mark: a 16:9 frame holding a layered backdrop -->
+  <g clip-path="url(#frame)">
+    <rect x="610" y="236" width="380" height="214" fill="url(#sky)"/>
+    <circle cx="884" cy="318" r="60" fill="url(#orb)"/>
+    <path d="M610 362 C 672 322, 742 324, 806 356 S 930 396, 990 344 L990 450 L610 450 Z" fill="url(#w1)"/>
+    <path d="M610 396 C 684 362, 756 428, 830 398 S 944 358, 990 386 L990 450 L610 450 Z" fill="url(#w2)" opacity="0.92"/>
+    <path d="M610 420 C 694 394, 762 440, 846 418 S 952 400, 990 424 L990 450 L610 450 Z" fill="url(#w3)"/>
+    <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-width="2.5">
+      <path d="M610 362 C 672 322, 742 324, 806 356 S 930 396, 990 344" opacity="0.55"/>
+      <path d="M610 396 C 684 362, 756 428, 830 398 S 944 358, 990 386" opacity="0.45"/>
+      <path d="M610 420 C 694 394, 762 440, 846 418 S 952 400, 990 424" opacity="0.4"/>
+    </g>
+  </g>
+  <rect x="610" y="236" width="380" height="214" rx="30" fill="none" stroke="url(#brand)" stroke-width="6"/>
+  <!-- seed spark -->
+  <path d="M990 214 L998 236 L1020 244 L998 252 L990 274 L982 252 L960 244 L982 236 Z" fill="#ffffff"/>
+
+  <!-- wordmark -->
+  <text x="800" y="628" text-anchor="middle" font-family="'Inter', 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="118" letter-spacing="-2">
+    <tspan font-weight="800" fill="#ffffff">Backdrop</tspan><tspan font-weight="300" fill="url(#brand)" dx="22">Studio</tspan>
+  </text>
+  <text x="800" y="700" text-anchor="middle" font-family="'Inter', 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="25" font-weight="600" letter-spacing="7" fill="#8b91a1">SEEDED MOTION BACKGROUNDS · REACT + REMOTION</text>
+</svg>

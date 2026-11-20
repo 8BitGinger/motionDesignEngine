@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.svg" alt="Backdrop Studio — seeded motion backgrounds" width="100%">
+</p>
+
 # Backdrop Studio — React + Remotion
 
 Seeded, procedural motion backgrounds (29 patterns + a Chaos layer-stacker) drawn with Canvas 2D,
