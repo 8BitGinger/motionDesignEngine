@@ -1,0 +1,12 @@
+{
+  "corporate":  { "bg": ["#06122b", "#0b1f45"], "colors": ["#1e6bff", "#3fa9ff", "#7cc4ff", "#0b4fd6", "#a8d8ff"] },
+  "cyberpunk":  { "bg": ["#0a0414", "#16062e"], "colors": ["#ff2bd6", "#00f0ff", "#7a3cff", "#ff6ec7", "#2de2e6"] },
+  "sunset":     { "bg": ["#1a0a24", "#3a1030"], "colors": ["#ff7b39", "#ff3d6e", "#9b2fff", "#ffb347", "#ff5e99"] },
+  "ocean":      { "bg": ["#021821", "#04303f"], "colors": ["#00c2c7", "#0a84ff", "#2ee6d6", "#1767c4", "#7fe7ff"] },
+  "emerald":    { "bg": ["#02140e", "#05261b"], "colors": ["#10e08a", "#00d1c1", "#5cff9d", "#0a9f69", "#b6ffda"] },
+  "fire":       { "bg": ["#140402", "#2a0804"], "colors": ["#ff3b1f", "#ff8a00", "#ffd23f", "#d42a1e", "#ff5e3a"] },
+  "monochrome": { "bg": ["#08080a", "#18181c"], "colors": ["#ffffff", "#bfc3c9", "#7d838c", "#4a4f57", "#e6e8eb"] },
+  "synthwave":  { "bg": ["#0d0221", "#261447"], "colors": ["#ff2a6d", "#d300c5", "#7b2cff", "#05d9e8", "#ff6c11"] },
+  "gold":       { "bg": ["#050402", "#140f06"], "colors": ["#ffc845", "#e09b1a", "#fff1c1", "#a8700d", "#ffdb7a"] },
+  "neon":       { "bg": ["#030308", "#0b0b18"], "colors": ["#39ff14", "#ff073a", "#00e5ff", "#fff01f", "#bc13fe"] }
+}

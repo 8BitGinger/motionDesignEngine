@@ -1,0 +1,15 @@
+{
+  "cfg": {
+    "version": 1,
+    "type": "galaxy",
+    "seed": 7,
+    "palette": { "mode": "theme", "theme": "synthwave" },
+    "params": { "speed": 1, "density": 1, "glow": true, "grain": 0.1, "vignette": 0.4 }
+  },
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "durationInSeconds": 4,
+  "loop": true,
+  "loopFade": 1.5
+}

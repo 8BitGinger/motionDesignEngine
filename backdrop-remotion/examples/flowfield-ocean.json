@@ -1,0 +1,13 @@
+{
+  "cfg": {
+    "version": 1,
+    "type": "flowfield",
+    "seed": 42,
+    "palette": { "mode": "theme", "theme": "ocean" },
+    "params": { "speed": 1, "density": 1, "glow": true, "grain": 0.12, "vignette": 0.35 }
+  },
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "durationInSeconds": 3
+}
