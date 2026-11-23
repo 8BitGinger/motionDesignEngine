@@ -3,7 +3,7 @@ import { Player, type PlayerRef } from '@remotion/player';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PALETTE_MODES, THEMES, THEME_KEYS, buildPalette } from '../engine/ColorEngine';
 import { downloadBlob, runExport, baseName, type ExportFormat } from '../engine/ExportEngine';
-import { CALM_ZONES, DEFAULT_CONFIG, makeChaos, mutate, normalizeConfig, randSeed } from '../engine/SeedEngine';
+import { CALM_ZONES, DEFAULT_CONFIG, makeChaos, makeStack, mutate, normalizeConfig, randSeed } from '../engine/SeedEngine';
 import type { BackdropConfig, CalmZone, Control, Layer, Opts, Params } from '../engine/types';
 import { GENERATORS, GENERATOR_KEYS } from '../generators';
 import { Backdrop, type BackdropRenderProps, type GuideKind } from '../remotion/Backdrop';
@@ -13,9 +13,10 @@ import {
 import { ASPECTS, QUALITIES, type OutputSettings, outputSize, previewSize, sizeFor } from './output';
 import { Thumbnail } from './Thumbnail';
 
-const TYPES = [...GENERATOR_KEYS, 'chaos'];
-const nameOf = (k: string) => (k === 'chaos' ? 'Chaos' : GENERATORS[k]?.name ?? k);
-const typeLabel = (k: string) => (k === 'chaos' ? `${GENERATOR_KEYS.length + 1} · Chaos` : `${GENERATOR_KEYS.indexOf(k) + 1} · ${GENERATORS[k].name}`);
+const TYPES = [...GENERATOR_KEYS, 'chaos', 'stack'];
+const nameOf = (k: string) => (k === 'chaos' ? 'Chaos' : k === 'stack' ? 'Layer Stack' : GENERATORS[k]?.name ?? k);
+const typeLabel = (k: string) => (k === 'chaos' ? `${GENERATOR_KEYS.length + 1} · Chaos` : k === 'stack' ? `${GENERATOR_KEYS.length + 2} · Layer Stack` : `${GENERATOR_KEYS.indexOf(k) + 1} · ${GENERATORS[k].name}`);
+const BLEND_MODES = ['source-over', 'screen', 'lighter', 'overlay', 'soft-light', 'multiply', 'difference'];
 
 const REMOTION_CODECS = [
   { value: 'h264', label: 'MP4 · H.264', ext: 'mp4', flags: '--codec=h264', alpha: false },
@@ -116,7 +117,7 @@ export function App() {
   const pal = useMemo(() => buildPalette(cfg.palette), [cfg.palette]);
   const fade = Math.min(loopFade, duration / 2);
   const loopOn = loop && !audio;
-  const types = cfg.type === 'chaos' ? (cfg.layers ?? []).map(L => L.type) : [cfg.type];
+  const types = cfg.type === 'chaos' || cfg.type === 'stack' ? (cfg.layers ?? []).map(L => L.type) : [cfg.type];
   const nativeLoop = types.every(t => GENERATORS[t]?.loops !== false);
   const audioProps = audio ? { src: audio.url, reactivity: audio.reactivity, volume: audio.volume } : null;
   const inputProps = useMemo(() => ({ cfg, loop: loopOn, loopFade: fade, transparent, audio: audioProps, guides }),
@@ -169,9 +170,18 @@ export function App() {
   const chaos = () => setCfg(c => makeChaos(randSeed(), lockPalette ? c.palette : null), true);
   const pickType = (t: string) => {
     if (t === 'chaos') return chaos();
+    if (t === 'stack') {
+      // Start from the current pattern (or the stack's own layers) with a complementary one on top.
+      return setCfg(c => {
+        if (c.type === 'stack') return c;
+        const bottom = GENERATORS[c.type] ? c.type : c.layers?.[0]?.type ?? 'aurora';
+        const top = ['fire', 'bubbles', 'particles', 'bokeh'].find(k => k !== bottom) ?? 'bokeh';
+        return { ...makeStack(bottom, top, c.palette, c.seed, c.params), calm: c.calm };
+      }, true);
+    }
     setCfg(c => { const { layers: _l, opts: _o, ...rest } = c; return { ...rest, type: t }; }, true);
   };
-  const reseed = () => setCfg(c => (c.type === 'chaos' ? makeChaos(randSeed(), lockPalette ? c.palette : null) : { ...c, seed: randSeed() }), true);
+  const reseed = () => setCfg(c => (c.type === 'chaos' ? makeChaos(randSeed(), lockPalette ? c.palette : null) : c.type === 'stack' ? { ...c, layers: c.layers?.map(L => ({ ...L, seed: randSeed() })) } : { ...c, seed: randSeed() }), true);
   const doMutate = () => setCfg(c => mutate(c, randSeed()), true);
   const load = (c: BackdropConfig) => setCfg(c, true);
   const setOutput = (patch: Partial<OutputSettings>) =>
@@ -229,7 +239,7 @@ export function App() {
   const downloadProps = () => downloadBlob(new Blob([JSON.stringify(renderProps, null, 2)], { type: 'application/json' }), `${name}.json`);
   const shareUrl = `${location.origin}${location.pathname}#${shareHash}`;
 
-  const singleControls = cfg.type !== 'chaos' ? GENERATORS[cfg.type]?.controls ?? [] : [];
+  const singleControls = cfg.type !== 'chaos' && cfg.type !== 'stack' ? GENERATORS[cfg.type]?.controls ?? [] : [];
 
   return (
     <div className="app">
@@ -284,7 +294,7 @@ export function App() {
           <h2>Pattern</h2>
           <div className="types">
             {TYPES.map((k, i) => {
-              const thumbCfg: BackdropConfig = k === 'chaos' ? makeChaos(4242, cfg.palette) : { ...cfg, type: k, seed: 7, layers: undefined, opts: undefined, calm: undefined, params: { ...cfg.params, speed: 1 } };
+              const thumbCfg: BackdropConfig = k === 'chaos' ? makeChaos(4242, cfg.palette) : k === 'stack' ? makeStack('aurora', 'bubbles', cfg.palette, 4242) : { ...cfg, type: k, seed: 7, layers: undefined, opts: undefined, calm: undefined, params: { ...cfg.params, speed: 1 } };
               return (
                 <button key={k} className={'type' + (cfg.type === k ? ' on' : '')} onClick={() => pickType(k)}>
                   <Thumbnail cfg={thumbCfg} delay={i * 15} />
@@ -299,6 +309,36 @@ export function App() {
           <section>
             <h2>{GENERATORS[cfg.type].name} options</h2>
             <Controls controls={singleControls} opts={cfg.opts} onChange={o => setCfg(c => ({ ...c, opts: o }))} />
+          </section>
+        )}
+
+        {cfg.type === 'stack' && cfg.layers?.length === 2 && (
+          <section>
+            <h2>Layer stack</h2>
+            {([1, 0] as const).map(i => {
+              const L = cfg.layers![i];
+              return (
+                <details key={i} className="layer" open>
+                  <summary>{i === 1 ? 'Top layer' : 'Bottom layer'} · {nameOf(L.type)}</summary>
+                  <label>Pattern</label>
+                  <select value={L.type} onChange={e => setLayer(i, { type: e.target.value, opts: undefined })}>
+                    {GENERATOR_KEYS.map(k => <option key={k} value={k}>{GENERATORS[k].name}</option>)}
+                  </select>
+                  <Range label="Opacity" value={L.opacity} min={0} max={1} step={0.01} onChange={v => setLayer(i, { opacity: v })} />
+                  {i === 1 && (
+                    <>
+                      <label>Blend</label>
+                      <select value={L.blend} onChange={e => setLayer(i, { blend: e.target.value as GlobalCompositeOperation })}>
+                        {BLEND_MODES.map(b => <option key={b}>{b}</option>)}
+                      </select>
+                    </>
+                  )}
+                  <Controls controls={GENERATORS[L.type]?.controls ?? []} opts={L.opts} onChange={o => setLayer(i, { opts: o })} />
+                  <button onClick={() => setLayer(i, { seed: randSeed() })}>Re-roll this layer</button>
+                </details>
+              );
+            })}
+            <button onClick={() => setCfg(c => ({ ...c, layers: [c.layers![1], c.layers![0]].map((L, i) => ({ ...L, blend: i === 0 ? 'source-over' : L.blend, mask: undefined })) }), true)}>⇅ Swap top / bottom</button>
           </section>
         )}
 

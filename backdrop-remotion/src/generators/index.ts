@@ -28,12 +28,14 @@ import { circuit } from './circuit';
 import { confetti } from './confetti';
 import { halftone } from './halftone';
 import { kaleidoscope } from './kaleidoscope';
+import { fire } from './fire';
+import { bubbles } from './bubbles';
 
 /** Registry in display order. Keys are the `type` values used in seed JSON. Chaos is shown after these. */
 export const GENERATORS: Record<string, Generator> = {
   aurora, blobs, particles, hex, landscape, orbit, geometric, grain, rays, matrix,
   flowfield, mesh, waves, starfield, lines, mosaic, pulse, ribbons, digital,
-  bokeh, topo, plasma, cells, tunnel, galaxy, circuit, confetti, halftone, kaleidoscope,
+  bokeh, topo, plasma, cells, tunnel, galaxy, circuit, confetti, halftone, kaleidoscope, fire, bubbles,
 };
 
 export const GENERATOR_KEYS = Object.keys(GENERATORS);

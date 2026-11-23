@@ -72,6 +72,18 @@ export function makeChaos(seed: number, lockedPalette?: PaletteConfig | null): B
   };
 }
 
+/** Two hand-picked patterns stacked: `bottom` underneath, `top` over it. Opaque fields go at the bottom. */
+export function makeStack(bottom: string, top: string, palette: PaletteConfig, seed = randSeed(), params: Params = DEFAULT_PARAMS): BackdropConfig {
+  const r = makeRng(seed);
+  return {
+    version: 1, type: 'stack', seed, palette: structuredClone(palette), params: { ...params },
+    layers: [
+      { type: bottom, seed: Math.floor(r() * 2 ** 31), blend: 'source-over', opacity: 1 },
+      { type: top, seed: Math.floor(r() * 2 ** 31), blend: GENERATORS[top]?.kind === 'field' ? 'screen' : 'source-over', opacity: GENERATORS[top]?.kind === 'field' ? 0.6 : 1 },
+    ],
+  };
+}
+
 const nudge = (r: Rng, v: number, amt: number, lo: number, hi: number, dp = 2) => +clamp(v + (r() * 2 - 1) * amt, lo, hi).toFixed(dp);
 
 function mutateOpts(r: Rng, type: string, opts: Opts | undefined): Opts | undefined {
@@ -108,7 +120,7 @@ export function mutate(cfg: BackdropConfig, seed: number): BackdropConfig {
     c.palette.hue = ((c.palette.hue ?? 0) + r.int(-18, 18) + 360) % 360;
     if (c.palette.mode === 'dual') c.palette.hue2 = ((c.palette.hue2 ?? 0) + r.int(-18, 18) + 360) % 360;
   }
-  if (c.type === 'chaos' && c.layers) {
+  if ((c.type === 'chaos' || c.type === 'stack') && c.layers) {
     c.layers = c.layers.map((L, i) => {
       const n: Layer = { ...L, params: { ...L.params, speed: nudge(r, L.params?.speed ?? 1, 0.2, 0.2, 2.5), density: nudge(r, L.params?.density ?? 1, 0.2, 0.3, 2) } };
       if (i > 0 && n.opacity > 0) n.opacity = nudge(r, n.opacity, 0.12, 0.2, 1);
@@ -146,10 +158,11 @@ export function normalizeConfig(input: unknown): BackdropConfig {
   if (!input || typeof input !== 'object') throw new Error('Config must be a JSON object.');
   const c = input as Partial<BackdropConfig>;
   const type = c.type ?? '';
-  if (type !== 'chaos' && !GENERATOR_KEYS.includes(type)) throw new Error(`Unknown type "${type}". Valid: ${[...GENERATOR_KEYS, 'chaos'].join(', ')}`);
+  if (type !== 'chaos' && type !== 'stack' && !GENERATOR_KEYS.includes(type)) throw new Error(`Unknown type "${type}". Valid: ${[...GENERATOR_KEYS, 'chaos', 'stack'].join(', ')}`);
   let layers: Layer[] | undefined;
-  if (type === 'chaos') {
-    if (!Array.isArray(c.layers) || !c.layers.length) throw new Error('A chaos config needs a non-empty "layers" array.');
+  if (type === 'chaos' || type === 'stack') {
+    if (!Array.isArray(c.layers) || !c.layers.length) throw new Error(`A ${type} config needs a non-empty "layers" array.`);
+    if (type === 'stack' && c.layers.length !== 2) throw new Error('A stack config needs exactly 2 layers (bottom first).');
     layers = c.layers.map((L, i) => {
       if (!GENERATOR_KEYS.includes(L.type)) throw new Error(`Unknown layer type "${L.type}".`);
       if (L.mask != null && (!Number.isInteger(L.mask) || L.mask < 0 || L.mask >= c.layers!.length || L.mask === i)) throw new Error(`Layer ${i}: "mask" must be the index of another layer.`);
@@ -157,7 +170,7 @@ export function normalizeConfig(input: unknown): BackdropConfig {
       return { ...L, seed: (L.seed ?? 1) >>> 0, opacity: clamp(L.opacity ?? 1, 0, 1), blend: L.blend || 'source-over', ...(opts ? { opts } : { opts: undefined }) };
     });
   }
-  const opts = type === 'chaos' ? undefined : cleanOpts(type, c.opts);
+  const opts = layers ? undefined : cleanOpts(type, c.opts);
   const calm = cleanCalm(c.calm);
   return {
     version: 1,

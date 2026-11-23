@@ -32,7 +32,7 @@ const props = (cfg, extra = {}) => ({ cfg, width: 320, height: 180, fps: 30, dur
 
 const cases = [];
 for (const k of keys) cases.push({ name: k, frame: 45, props: props(look(k)) });
-for (const k of ['particles', 'galaxy', 'landscape', 'matrix', 'starfield', 'tunnel']) cases.push({ name: `${k}+loop`, frame: 60, props: props(look(k), { loop: true }) });
+for (const k of ['fire', 'bubbles', 'particles', 'galaxy', 'landscape', 'matrix', 'starfield', 'tunnel']) cases.push({ name: `${k}+loop`, frame: 60, props: props(look(k), { loop: true }) });
 cases.push({ name: 'flowfield+crossfade-loop', frame: 10, props: props(look('flowfield'), { loop: true, loopFade: 1 }) });
 cases.push({
   name: 'chaos+mask', frame: 30,
@@ -44,6 +44,10 @@ cases.push({
       { type: 'plasma', seed: 3, blend: 'source-over', opacity: 1, mask: 1 },
     ],
   }),
+});
+cases.push({
+  name: 'stack+loop', frame: 60,
+  props: props({ ...look('stack'), layers: [{ type: 'plasma', seed: 1, blend: 'source-over', opacity: 1 }, { type: 'fire', seed: 2, blend: 'screen', opacity: 0.9 }] }, { loop: true }),
 });
 cases.push({ name: 'calm+opts', frame: 30, props: props(look('tunnel', { opts: { sides: 6, rings: 30 }, calm: { zone: 'left', strength: 0.8 } })) });
 cases.push({ name: 'transparent', frame: 30, props: props(look('bokeh'), { transparent: true }), png: true });

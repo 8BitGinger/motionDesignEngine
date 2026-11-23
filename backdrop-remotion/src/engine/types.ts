@@ -41,7 +41,7 @@ export interface Calm {
 /** The full, serialisable description of a background. Same config = same pixels. */
 export interface BackdropConfig {
   version: 1;
-  type: string; // a generator key, or 'chaos'
+  type: string; // a generator key, 'chaos' (random layers) or 'stack' (two chosen layers)
   seed: number;
   palette: PaletteConfig;
   params: Params;

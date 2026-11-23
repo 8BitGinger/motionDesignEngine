@@ -101,7 +101,7 @@ export function createRenderer(canvas: HTMLCanvasElement, cfg: BackdropConfig, o
     c.save(); c.globalCompositeOperation = 'overlay'; c.globalAlpha = amount; c.fillStyle = pat; c.fillRect(0, 0, w, h); c.restore();
   };
 
-  const isChaos = cfg.type === 'chaos';
+  const isChaos = cfg.type === 'chaos' || cfg.type === 'stack'; // both are multi-layer configs
   const defs: Layer[] = isChaos
     ? cfg.layers ?? []
     : [{ type: cfg.type, seed: cfg.seed, blend: 'source-over', opacity: 1, params: {}, opts: cfg.opts }];
